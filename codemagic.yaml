@@ -6,40 +6,49 @@ workflows:
 
     environment:
       xcode: latest
+      cocoapods: default
 
     scripts:
       - name: Unzip iOS source
         script: |
-          echo "Unzipping project..."
+          echo "📦 Unzipping project..."
           unzip -o ios_app.zip -d .
-          echo "Unzipped files:"
+          echo "✅ Unzipped files:"
           ls -R
 
-      - name: Locate Xcode project
+      - name: Locate iOS project folder
         script: |
-          echo "Searching for BarberSalon.xcodeproj..."
-          FOLDER=$(find . -type d -name "BarberSalon.xcodeproj" | head -1 | xargs dirname)
+          echo "🔍 Searching for BarberSalon.xcworkspace..."
+          FOLDER=$(find . -type f -name "BarberSalon.xcworkspace" | head -1 | xargs dirname)
           if [ -z "$FOLDER" ]; then
-            echo "BarberSalon.xcodeproj not found after unzip!"
-            echo "Showing folder structure:"
-            ls -R
+            echo "❌ BarberSalon.xcworkspace not found after unzip!"
             exit 1
           fi
-          echo "Found project folder: $FOLDER"
-          echo "FOLDER=$FOLDER" >> $CM_ENV_PATH
+          echo "✅ Found project folder: $FOLDER"
+          echo "FOLDER=$FOLDER" >> $CM_ENV_PATH   # Save for later steps
+
+      - name: Install dependencies
+        script: |
+          echo "📦 Installing CocoaPods..."
+          cd "$FOLDER"
+          if [ -f "Podfile" ]; then
+            pod install --repo-update
+          else
+            echo "⚠️ No Podfile found — skipping pod install."
+          fi
 
       - name: Build iOS app
         script: |
-          echo "Building BarberSalon from $FOLDER..."
+          echo "🚀 Building BarberSalon..."
           cd "$FOLDER"
-          if [ ! -d "BarberSalon.xcodeproj" ]; then
-            echo "BarberSalon.xcodeproj missing inside $FOLDER"
+          if [ ! -f "BarberSalon.xcworkspace" ]; then
+            echo "❌ Still can't find BarberSalon.xcworkspace inside $FOLDER"
+            echo "📂 Contents:"
             ls -al
             exit 1
           fi
-
           xcodebuild \
-            -project BarberSalon.xcodeproj \
+            -workspace BarberSalon.xcworkspace \
             -scheme BarberSalon \
             -sdk iphoneos \
             -configuration Release \
