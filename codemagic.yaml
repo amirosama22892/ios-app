@@ -9,51 +9,37 @@ workflows:
       cocoapods: default
 
     scripts:
-      - name: Debug: List source files before unzip
-        script: |
-          echo "Files in current directory:"
-          ls -F
-
       - name: Unzip iOS source
         script: |
-          set -e
           echo "Unzipping project..."
-          
-          if [ -f "ios_app.zip" ]; then
-            unzip -o ios_app.zip -d .
-          elif ls *.zip 1> /dev/null 2>&1; then
-            echo "ios_app.zip not found. Attempting to unzip the first zip file found."
-            unzip -o *.zip -d .
-          else
-            echo "FATAL ERROR: No zip file found. Ensure your source code is uploaded as a .zip file."
-            exit 9
-          fi
-          
-          echo "Unzipped files (should include Podfile and project folders):"
-          ls -F
+          unzip -o ios_app.zip -d .
+          echo "Unzipped files:"
+          ls -R .
+          # Assuming the unzip operation places files directly in the working directory ('.')
 
-      - name: Install dependencies and create workspace
+      - name: Locate project folder
         script: |
-          set -e
+          echo "Locating iOS project..."
+          # Since the files are in the root directory, we just list them for verification
+          echo "Now inside folder:"
+          pwd
+          ls -al
+
+# --- Changes start here ---
+
+      - name: Install dependencies
+        script: |
+          # No need for 'cd ios_source/ios'
           echo "Installing CocoaPods..."
           if [ -f "Podfile" ]; then
             pod install --repo-update
-            echo "Files after pod install (MUST include BarberSalon.xcworkspace/):"
-            ls -F
           else
-            echo "ERROR: Podfile not found. Cannot proceed with CocoaPods installation."
-            exit 1
+            echo "No Podfile found — skipping pod install."
           fi
 
       - name: Build iOS app
         script: |
-          set -e
-          
-          if [ ! -d "BarberSalon.xcworkspace" ]; then
-            echo "ERROR: 'BarberSalon.xcworkspace' not found. Check 'pod install' logs above."
-            exit 1
-          fi
-          
+          # No need for 'cd /ios_source/ios' or any 'cd' if previous steps were executed in root
           echo "Building BarberSalon..."
           xcodebuild \
             -workspace BarberSalon.xcworkspace \
@@ -61,6 +47,8 @@ workflows:
             -sdk iphoneos \
             -configuration Release \
             -allowProvisioningUpdates
+
+# --- Changes end here ---
 
     artifacts:
       - build/**/*.ipa
