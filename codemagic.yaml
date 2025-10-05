@@ -11,33 +11,36 @@ workflows:
     scripts:
       - name: Unzip iOS source
         script: |
+          set -e # Exit immediately if any command fails
           echo "Unzipping project..."
-          # The files (including Podfile and BarberSalon.xcworkspace) will be placed here (the current working directory)
+          # Unzip into the current working directory ('.')
           unzip -o ios_app.zip -d .
-          echo "Unzipped files:"
-          ls -R .
+          echo "Files after unzip (should include Podfile):"
+          ls -F
 
-      - name: Locate project folder
+      - name: Install dependencies and create workspace
         script: |
-          # No change in directory is needed, just verify
-          echo "Locating iOS project..."
-          echo "Now inside folder:"
-          pwd
-          ls -al
-
-      - name: Install dependencies
-        script: |
-          # The working directory is already correct (where Podfile is located)
+          set -e
           echo "Installing CocoaPods..."
           if [ -f "Podfile" ]; then
-            pod install --repo-update # This creates the required BarberSalon.xcworkspace
+            # 'pod install' must run successfully to generate 'BarberSalon.xcworkspace'
+            pod install --repo-update
+            echo "Files after pod install (MUST include BarberSalon.xcworkspace/):"
+            ls -F
           else
-            echo "No Podfile found — skipping pod install."
+            echo "ERROR: Podfile not found. Cannot proceed with CocoaPods installation."
+            exit 1
           fi
 
       - name: Build iOS app
         script: |
-          # The working directory is already correct (where BarberSalon.xcworkspace is located)
+          set -e
+          # Verify the workspace exists before building
+          if [ ! -d "BarberSalon.xcworkspace" ]; then
+            echo "ERROR: 'BarberSalon.xcworkspace' not found after 'pod install'. Check logs above."
+            exit 1
+          fi
+          
           echo "Building BarberSalon..."
           xcodebuild \
             -workspace BarberSalon.xcworkspace \
