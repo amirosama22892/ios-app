@@ -1,6 +1,6 @@
 workflows:
   ios_build:
-    name: iOS Build from ZIP
+    name: Build iOS BarberSalon App
     instance_type: mac_mini_m2
     max_build_duration: 60
 
@@ -9,28 +9,40 @@ workflows:
       cocoapods: default
 
     scripts:
-      - name: Unzip iOS project
+      - name: Unzip iOS source
         script: |
-          echo "Unzipping iOS source..."
+          echo "📦 Unzipping project..."
           unzip -o ios_app.zip -d .
-          echo "Contents after unzip:"
+          echo "✅ Unzipped files:"
           ls -al
 
-      - name: Install CocoaPods dependencies
+      - name: Install dependencies
         script: |
-          cd MyApp   # 👈 CHANGE THIS to your actual folder name
+          echo "📦 Installing CocoaPods..."
+          # Automatically detect where BarberSalon.xcworkspace is
+          FOLDER=$(find . -type f -name "BarberSalon.xcworkspace" | head -1 | xargs dirname)
+          echo "📂 Found project folder: $FOLDER"
+          cd "$FOLDER"
+          
           if [ -f "Podfile" ]; then
             pod install --repo-update
           else
-            echo "⚠️ No Podfile found, skipping pod install."
+            echo "⚠️ No Podfile found — skipping pod install."
           fi
 
       - name: Build iOS app
         script: |
-          cd MyApp   # 👈 same folder name here
+          cd "$FOLDER"
+          echo "🚀 Building BarberSalon..."
           xcodebuild \
-            -project MyApp.xcodeproj \
-            -scheme MyApp \
+            -workspace BarberSalon.xcworkspace \
+            -scheme BarberSalon \
             -sdk iphoneos \
             -configuration Release \
             -allowProvisioningUpdates
+
+    artifacts:
+      - build/**/*.ipa
+      - build/**/*.app
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/**/*.ipa
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/**/*.app
