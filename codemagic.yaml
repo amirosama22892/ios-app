@@ -39,14 +39,33 @@ workflows:
 
       - name: Build iOS app
         script: |
-          # No need for 'cd /ios_source/ios' or any 'cd' if previous steps were executed in root
           echo "Building BarberSalon..."
+
+          # Find the .xcworkspace path automatically
+          WORKSPACE_PATH=$(find . -name "BarberSalon.xcworkspace" | head -n 1)
+
+          if [ -z "$WORKSPACE_PATH" ]; then
+            echo "❌ ERROR: BarberSalon.xcworkspace not found!"
+            echo "Here are the files in current directory:"
+            ls -R .
+            exit 1
+          fi
+
+          # Move into the workspace directory
+          PROJECT_DIR=$(dirname "$WORKSPACE_PATH")
+          cd "$PROJECT_DIR"
+
+          echo "✅ Found workspace at: $WORKSPACE_PATH"
+          echo "📂 Now inside directory: $(pwd)"
+
+          # Build the project
           xcodebuild \
             -workspace BarberSalon.xcworkspace \
             -scheme BarberSalon \
             -sdk iphoneos \
             -configuration Release \
             -allowProvisioningUpdates
+
 
 # --- Changes end here ---
 
