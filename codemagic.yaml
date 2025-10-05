@@ -15,19 +15,21 @@ workflows:
           unzip -o ios_app.zip -d .
           echo "Unzipped files:"
           ls -R .
+          # Assuming the unzip operation places files directly in the working directory ('.')
 
       - name: Locate project folder
         script: |
           echo "Locating iOS project..."
-          # Go to where the workspace actually is
-          cd ios_source/ios
+          # Since the files are in the root directory, we just list them for verification
           echo "Now inside folder:"
           pwd
           ls -al
 
+# --- Changes start here ---
+
       - name: Install dependencies
         script: |
-          cd ios_source/ios
+          # No need for 'cd ios_source/ios'
           echo "Installing CocoaPods..."
           if [ -f "Podfile" ]; then
             pod install --repo-update
@@ -37,7 +39,7 @@ workflows:
 
       - name: Build iOS app
         script: |
-          cd /ios_source/ios
+          # No need for 'cd /ios_source/ios' or any 'cd' if previous steps were executed in root
           echo "Building BarberSalon..."
           xcodebuild \
             -workspace BarberSalon.xcworkspace \
@@ -45,6 +47,8 @@ workflows:
             -sdk iphoneos \
             -configuration Release \
             -allowProvisioningUpdates
+
+# --- Changes end here ---
 
     artifacts:
       - build/**/*.ipa
