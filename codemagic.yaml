@@ -1,6 +1,6 @@
 workflows:
   ios_build:
-    name: Build iOS BarberSalon App
+    name: Build iOS BarberSalon App (GitHub Source)
     instance_type: mac_mini_m2
     max_build_duration: 60
 
@@ -9,39 +9,34 @@ workflows:
       cocoapods: default
 
     scripts:
-      - name: Unzip iOS source
+      - name: Locate iOS project
         script: |
-          set -e # Exit immediately if any command fails
-          echo "Unzipping project..."
-          # Unzip into the current working directory ('.')
-          unzip -o ios_app.zip -d .
-          echo "Files after unzip (should include Podfile):"
-          ls -F
+          echo "🔍 Locating iOS project..."
+          ls -R .
+          FOLDER=$(find . -type f -name "BarberSalon.xcworkspace" | head -1 | xargs dirname)
+          if [ -z "$FOLDER" ]; then
+            echo "❌ BarberSalon.xcworkspace not found!"
+            exit 1
+          fi
+          echo "✅ Found project folder: $FOLDER"
+          echo "$FOLDER" > folder_path.txt
 
-      - name: Install dependencies and create workspace
+      - name: Install dependencies
         script: |
-          set -e
+          FOLDER=$(cat folder_path.txt)
+          cd "$FOLDER"
           echo "Installing CocoaPods..."
           if [ -f "Podfile" ]; then
-            # 'pod install' must run successfully to generate 'BarberSalon.xcworkspace'
             pod install --repo-update
-            echo "Files after pod install (MUST include BarberSalon.xcworkspace/):"
-            ls -F
           else
-            echo "ERROR: Podfile not found. Cannot proceed with CocoaPods installation."
-            exit 1
+            echo "⚠️ No Podfile found — skipping pod install."
           fi
 
       - name: Build iOS app
         script: |
-          set -e
-          # Verify the workspace exists before building
-          if [ ! -d "BarberSalon.xcworkspace" ]; then
-            echo "ERROR: 'BarberSalon.xcworkspace' not found after 'pod install'. Check logs above."
-            exit 1
-          fi
-          
-          echo "Building BarberSalon..."
+          FOLDER=$(cat folder_path.txt)
+          cd "$FOLDER"
+          echo "🚀 Building BarberSalon..."
           xcodebuild \
             -workspace BarberSalon.xcworkspace \
             -scheme BarberSalon \
