@@ -1,43 +1,36 @@
 workflows:
   ios_build:
-    name: iOS Build (App Store)
+    name: iOS Build from ZIP
     instance_type: mac_mini_m2
     max_build_duration: 60
 
     environment:
-      groups:
-        - appstore_credentials        # 👈 contains Issuer ID, Key ID, and private key
-      vars:
-        XCODE_PROJECT: "MyApp.xcodeproj"
-        XCODE_SCHEME: "MyApp"
-        BUNDLE_ID: "com.amirosama.myapp"
       xcode: latest
       cocoapods: default
 
     scripts:
-      - name: Install dependencies
+      - name: Unzip iOS project
         script: |
-          cd ios_app
-          pod install --repo-update || pod install
+          echo "Unzipping iOS source..."
+          unzip -o ios_app.zip -d .
+          echo "Contents after unzip:"
+          ls -al
 
-      - name: Build iOS app for App Store
+      - name: Install CocoaPods dependencies
         script: |
+          cd MyApp   # 👈 CHANGE THIS to your actual folder name
+          if [ -f "Podfile" ]; then
+            pod install --repo-update
+          else
+            echo "⚠️ No Podfile found, skipping pod install."
+          fi
+
+      - name: Build iOS app
+        script: |
+          cd MyApp   # 👈 same folder name here
           xcodebuild \
-            -project "$XCODE_PROJECT" \
-            -scheme "$XCODE_SCHEME" \
+            -project MyApp.xcodeproj \
+            -scheme MyApp \
             -sdk iphoneos \
             -configuration Release \
-            -allowProvisioningUpdates \
-            -destination generic/platform=iOS
-
-    artifacts:
-      - ios_app/build/**/*.ipa
-      - ios_app/build/**/*.xcarchive
-      - ios_app/build/**/*.log
-
-    publishing:
-      app_store_connect:
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-        submit_to_testflight: true
+            -allowProvisioningUpdates
