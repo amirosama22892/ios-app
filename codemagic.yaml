@@ -10,33 +10,35 @@ workflows:
     scripts:
       - name: Unzip iOS source
         script: |
-          echo "📦 Unzipping project..."
+          echo "Unzipping project..."
           unzip -o ios_app.zip -d .
-          echo "✅ Unzipped files:"
+          echo "Files after unzip:"
           ls -R
 
       - name: Locate iOS project folder
         script: |
-          echo "🔍 Locating BarberSalon.xcodeproj..."
-          FOLDER=$(find . -type f -name "BarberSalon.xcodeproj" | head -1 | xargs dirname)
+          echo "Searching for BarberSalon.xcodeproj directory..."
+          FOLDER=$(find . -type d -name "BarberSalon.xcodeproj" | head -1 | xargs dirname)
           if [ -z "$FOLDER" ]; then
-            echo "❌ BarberSalon.xcodeproj not found!"
+            echo "BarberSalon.xcodeproj directory not found after unzip!"
+            echo "Showing extracted structure:"
+            ls -R
             exit 1
           fi
-          echo "✅ Found Xcode project in: $FOLDER"
+          echo "Found project directory: $FOLDER"
           echo "FOLDER=$FOLDER" >> $CM_ENV_PATH
 
       - name: Build iOS app
         script: |
-          echo "🚀 Building BarberSalon from $FOLDER..."
+          echo "Building BarberSalon from $FOLDER..."
           cd "$FOLDER"
           if [ ! -d "BarberSalon.xcodeproj" ]; then
-            echo "❌ BarberSalon.xcodeproj missing inside $FOLDER"
+            echo "BarberSalon.xcodeproj missing inside $FOLDER"
             ls -al
             exit 1
           fi
 
-          # Build the project using xcodebuild
+          echo "Running xcodebuild..."
           xcodebuild \
             -project BarberSalon.xcodeproj \
             -scheme BarberSalon \
