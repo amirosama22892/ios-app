@@ -16,10 +16,9 @@ workflows:
 
       - name: Unzip iOS source
         script: |
-          set -e # Exit immediately if any command fails
+          set -e
           echo "Unzipping project..."
           
-          # Try to unzip the expected file, or any other zip file found.
           if [ -f "ios_app.zip" ]; then
             unzip -o ios_app.zip -d .
           elif ls *.zip 1> /dev/null 2>&1; then
@@ -36,10 +35,8 @@ workflows:
       - name: Install dependencies and create workspace
         script: |
           set -e
-          # Ensure we are in the directory containing the Podfile
           echo "Installing CocoaPods..."
           if [ -f "Podfile" ]; then
-            # This command generates the required 'BarberSalon.xcworkspace' file.
             pod install --repo-update
             echo "Files after pod install (MUST include BarberSalon.xcworkspace/):"
             ls -F
@@ -52,14 +49,12 @@ workflows:
         script: |
           set -e
           
-          # Verify the workspace exists before building
           if [ ! -d "BarberSalon.xcworkspace" ]; then
             echo "ERROR: 'BarberSalon.xcworkspace' not found. Check 'pod install' logs above."
             exit 1
           fi
           
           echo "Building BarberSalon..."
-          # Use the generated workspace and the defined scheme
           xcodebuild \
             -workspace BarberSalon.xcworkspace \
             -scheme BarberSalon \
