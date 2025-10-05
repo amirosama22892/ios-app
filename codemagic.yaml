@@ -1,6 +1,6 @@
 workflows:
   ios_build:
-    name: Build iOS BarberSalon App (TAR.GZ Source)
+    name: Build iOS BarberSalon App
     instance_type: mac_mini_m2
     max_build_duration: 60
 
@@ -9,36 +9,49 @@ workflows:
       cocoapods: default
 
     scripts:
-      - name: Extract iOS source
+      - name: Unzip iOS source
         script: |
-          echo "📦 Extracting iOS source..."
-          tar -xzf ios_source.tar.gz -C .
-          echo "✅ Extracted files:"
-          ls -R .
+          set -e # Exit immediately if any command fails
+          echo "Unzipping project..."
+          # Unzip into the current working directory ('.')
+          unzip -o ios_app.zip -d .
+          echo "Files after unzip (should include Podfile):"
+          ls -F
 
-      - name: Locate project folder
+      - name: Install dependencies and create workspace
         script: |
-          echo "🔍 Locating BarberSalon.xcworkspace..."
-          FOLDER=$(find . -type f -name "BarberSalon.xcworkspace" | head -1 | xargs dirname)
-          if [ -z "$FOLDER" ]; then
-            echo "❌ BarberSalon.xcworkspace not found after extraction!"
-            exit 1
-          fi
-          echo "✅ Found project folder: $FOLDER"
-          echo "$FOLDER" > folder_path.txt
-
-      - name: Install dependencies
-        script: |
-          FOLDER=$(cat folder_path.txt)
-          cd "$FOLDER"
-          echo "📦 Installing CocoaPods..."
+          set -e
+          echo "Installing CocoaPods..."
           if [ -f "Podfile" ]; then
+            # 'pod install' must run successfully to generate 'BarberSalon.xcworkspace'
             pod install --repo-update
+            echo "Files after pod install (MUST include BarberSalon.xcworkspace/):"
+            ls -F
           else
-            echo "⚠️ No Podfile found — skipping pod install."
+            echo "ERROR: Podfile not found. Cannot proceed with CocoaPods installation."
+            exit 1
           fi
 
       - name: Build iOS app
         script: |
-          FOLDER=$(cat folder_path.txt)
-          cd "$FOLDER"
+          set -e
+          # Verify the workspace exists before building
+          if [ ! -d "BarberSalon.xcworkspace" ]; then
+            echo "ERROR: 'BarberSalon.xcworkspace' not found after 'pod install'. Check logs above."
+            exit 1
+          fi
+          
+          echo "Building BarberSalon..."
+          xcodebuild \
+            -workspace BarberSalon.xcworkspace \
+            -scheme BarberSalon \
+            -sdk iphoneos \
+            -configuration Release \
+            -allowProvisioningUpdates
+
+    artifacts:
+      - build/**/*.ipa
+      - build/**/*.app
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/**/*.ipa
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/**/*.app
+    
