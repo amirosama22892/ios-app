@@ -9,21 +9,37 @@ workflows:
       cocoapods: default
 
     scripts:
+      - name: Debug: List source files before unzip
+        script: |
+          echo "Files in current directory:"
+          ls -F
+
       - name: Unzip iOS source
         script: |
           set -e # Exit immediately if any command fails
           echo "Unzipping project..."
-          # Unzip into the current working directory ('.')
-          unzip -o ios_app.zip -d .
-          echo "Files after unzip (should include Podfile):"
+          
+          # Try to unzip the expected file, or any other zip file found.
+          if [ -f "ios_app.zip" ]; then
+            unzip -o ios_app.zip -d .
+          elif ls *.zip 1> /dev/null 2>&1; then
+            echo "ios_app.zip not found. Attempting to unzip the first zip file found."
+            unzip -o *.zip -d .
+          else
+            echo "FATAL ERROR: No zip file found. Ensure your source code is uploaded as a .zip file."
+            exit 9
+          fi
+          
+          echo "Unzipped files (should include Podfile and project folders):"
           ls -F
 
       - name: Install dependencies and create workspace
         script: |
           set -e
+          # Ensure we are in the directory containing the Podfile
           echo "Installing CocoaPods..."
           if [ -f "Podfile" ]; then
-            # 'pod install' must run successfully to generate 'BarberSalon.xcworkspace'
+            # This command generates the required 'BarberSalon.xcworkspace' file.
             pod install --repo-update
             echo "Files after pod install (MUST include BarberSalon.xcworkspace/):"
             ls -F
@@ -35,13 +51,15 @@ workflows:
       - name: Build iOS app
         script: |
           set -e
+          
           # Verify the workspace exists before building
           if [ ! -d "BarberSalon.xcworkspace" ]; then
-            echo "ERROR: 'BarberSalon.xcworkspace' not found after 'pod install'. Check logs above."
+            echo "ERROR: 'BarberSalon.xcworkspace' not found. Check 'pod install' logs above."
             exit 1
           fi
           
           echo "Building BarberSalon..."
+          # Use the generated workspace and the defined scheme
           xcodebuild \
             -workspace BarberSalon.xcworkspace \
             -scheme BarberSalon \
@@ -54,4 +72,3 @@ workflows:
       - build/**/*.app
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/**/*.ipa
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/**/*.app
-    
