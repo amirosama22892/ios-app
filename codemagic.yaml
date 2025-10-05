@@ -1,6 +1,6 @@
 workflows:
   ios_build:
-    name: Build iOS BarberSalon App (GitHub Source)
+    name: Build iOS BarberSalon App (TAR.GZ Source)
     instance_type: mac_mini_m2
     max_build_duration: 60
 
@@ -9,13 +9,19 @@ workflows:
       cocoapods: default
 
     scripts:
-      - name: Locate iOS project
+      - name: Extract iOS source
         script: |
-          echo "🔍 Locating iOS project..."
+          echo "📦 Extracting iOS source..."
+          tar -xzf ios_source.tar.gz -C .
+          echo "✅ Extracted files:"
           ls -R .
+
+      - name: Locate project folder
+        script: |
+          echo "🔍 Locating BarberSalon.xcworkspace..."
           FOLDER=$(find . -type f -name "BarberSalon.xcworkspace" | head -1 | xargs dirname)
           if [ -z "$FOLDER" ]; then
-            echo "❌ BarberSalon.xcworkspace not found!"
+            echo "❌ BarberSalon.xcworkspace not found after extraction!"
             exit 1
           fi
           echo "✅ Found project folder: $FOLDER"
@@ -25,7 +31,7 @@ workflows:
         script: |
           FOLDER=$(cat folder_path.txt)
           cd "$FOLDER"
-          echo "Installing CocoaPods..."
+          echo "📦 Installing CocoaPods..."
           if [ -f "Podfile" ]; then
             pod install --repo-update
           else
@@ -36,16 +42,3 @@ workflows:
         script: |
           FOLDER=$(cat folder_path.txt)
           cd "$FOLDER"
-          echo "🚀 Building BarberSalon..."
-          xcodebuild \
-            -workspace BarberSalon.xcworkspace \
-            -scheme BarberSalon \
-            -sdk iphoneos \
-            -configuration Release \
-            -allowProvisioningUpdates
-
-    artifacts:
-      - build/**/*.ipa
-      - build/**/*.app
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/**/*.ipa
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/**/*.app
