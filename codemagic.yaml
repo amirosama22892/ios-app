@@ -9,27 +9,24 @@ workflows:
       cocoapods: default
 
     scripts:
-      - name: Unzip iOS source
+      - name: Extract iOS source
         script: |
-          echo "Unzipping project..."
-          unzip -o ios_app.zip -d .
-          echo "Unzipped files:"
-          ls -R .
-          # Assuming the unzip operation places files directly in the working directory ('.')
-
-      - name: Locate project folder
-        script: |
-          echo "Locating iOS project..."
-          # Since the files are in the root directory, we just list them for verification
-          echo "Now inside folder:"
-          pwd
-          ls -al
-
-# --- Changes start here ---
+          echo "Extracting iOS source..."
+          if [ -f "ios_app.zip" ]; then
+            echo "Found ios_app.zip — extracting..."
+            unzip -o ios_app.zip -d .
+          elif [ -f "ios_source.tar.gz" ]; then
+            echo "Found ios_source.tar.gz — extracting..."
+            tar -xzf ios_source.tar.gz -C .
+          else
+            echo "❌ ERROR: No iOS source archive found!"
+            exit 1
+          fi
+          echo "✅ Extraction complete. Here’s the folder structure:"
+          find . -maxdepth 3
 
       - name: Install dependencies
         script: |
-          # No need for 'cd ios_source/ios'
           echo "Installing CocoaPods..."
           if [ -f "Podfile" ]; then
             pod install --repo-update
@@ -40,34 +37,22 @@ workflows:
       - name: Build iOS app
         script: |
           echo "Building BarberSalon..."
-
-          # Find the .xcworkspace path automatically
           WORKSPACE_PATH=$(find . -name "BarberSalon.xcworkspace" | head -n 1)
-
           if [ -z "$WORKSPACE_PATH" ]; then
             echo "❌ ERROR: BarberSalon.xcworkspace not found!"
-            echo "Here are the files in current directory:"
-            ls -R .
+            find . -maxdepth 4
             exit 1
           fi
-
-          # Move into the workspace directory
           PROJECT_DIR=$(dirname "$WORKSPACE_PATH")
           cd "$PROJECT_DIR"
-
           echo "✅ Found workspace at: $WORKSPACE_PATH"
           echo "📂 Now inside directory: $(pwd)"
-
-          # Build the project
           xcodebuild \
             -workspace BarberSalon.xcworkspace \
             -scheme BarberSalon \
             -sdk iphoneos \
             -configuration Release \
             -allowProvisioningUpdates
-
-
-# --- Changes end here ---
 
     artifacts:
       - build/**/*.ipa
