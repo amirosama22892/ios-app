@@ -18,26 +18,30 @@ workflows:
 
       - name: Locate project folder
         script: |
-          echo "Locating iOS project..."
-          # Go to where the workspace actually is
-          cd ios_source/ios
-          echo "Now inside folder:"
-          pwd
-          ls -al
+          echo "Locating BarberSalon.xcworkspace..."
+          FOLDER=$(find . -type f -name "BarberSalon.xcworkspace" | head -1 | xargs dirname)
+          if [ -z "$FOLDER" ]; then
+            echo "❌ BarberSalon.xcworkspace not found!"
+            exit 1
+          fi
+          echo "✅ Found project folder: $FOLDER"
+          echo "$FOLDER" > folder_path.txt
 
       - name: Install dependencies
         script: |
-          cd ios_source/ios
+          FOLDER=$(cat folder_path.txt)
+          cd "$FOLDER"
           echo "Installing CocoaPods..."
           if [ -f "Podfile" ]; then
             pod install --repo-update
           else
-            echo "No Podfile found — skipping pod install."
+            echo "⚠️ No Podfile found — skipping pod install."
           fi
 
       - name: Build iOS app
         script: |
-          cd ios_source/ios
+          FOLDER=$(cat folder_path.txt)
+          cd "$FOLDER"
           echo "Building BarberSalon..."
           xcodebuild \
             -workspace BarberSalon.xcworkspace \
