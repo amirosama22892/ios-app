@@ -37,7 +37,7 @@ workflows:
 
       - name: Build iOS app
         script: |
-          cd ios_source.tar/ios_source/ios
+          cd /ios_source/ios
           echo "Building BarberSalon..."
           xcodebuild \
             -workspace BarberSalon.xcworkspace \
