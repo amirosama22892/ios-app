@@ -1,1 +1,56 @@
+workflows:
+  ios_build_from_zip:
+    name: iOS Build from ZIP
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+
+    environment:
+      ios_signing:
+        distribution_type: app_store       # or ad_hoc / development / enterprise
+        bundle_identifier: com.example.myapp
+      vars:
+        XCODE_PROJECT: "MyApp.xcodeproj"
+        XCODE_SCHEME: "MyApp"
+        ZIP_FILE: "ios_app.zip"
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+
+    scripts:
+      - name: Unzip iOS project
+        script: |
+          echo "Unzipping iOS project..."
+          unzip -o "$ZIP_FILE" -d .
+
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios_app
+          pod install --repo-update || pod install
+
+      - name: Build iOS app
+        script: |
+          cd ios_app
+          xcodebuild \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -sdk iphoneos \
+            -configuration Release \
+            clean build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+    artifacts:
+      - ios_app/build/**/*.ipa
+      - ios_app/build/**/*.app
+      - ios_app/build/**/*.xcarchive
+      - ios_app/build/Logs/**/*.log
+
+    publishing:
+      email:
+        recipients:
+          - your_email@example.com
+        notify:
+          success: true
+          failure: true
 
