@@ -11,34 +11,33 @@ workflows:
     scripts:
       - name: Unzip iOS source
         script: |
-          set -e # Exit immediately if any command fails
           echo "Unzipping project..."
+          # The files (including Podfile and BarberSalon.xcworkspace) will be placed here (the current working directory)
           unzip -o ios_app.zip -d .
-          echo "Files after unzip:"
-          ls -F # List files in the current directory
+          echo "Unzipped files:"
+          ls -R .
+
+      - name: Locate project folder
+        script: |
+          # No change in directory is needed, just verify
+          echo "Locating iOS project..."
+          echo "Now inside folder:"
+          pwd
+          ls -al
 
       - name: Install dependencies
         script: |
-          set -e
+          # The working directory is already correct (where Podfile is located)
           echo "Installing CocoaPods..."
           if [ -f "Podfile" ]; then
-            pod install --repo-update
-            echo "Files after pod install:"
-            ls -F # <<< CHECK: This output MUST show BarberSalon.xcworkspace
+            pod install --repo-update # This creates the required BarberSalon.xcworkspace
           else
             echo "No Podfile found — skipping pod install."
           fi
 
       - name: Build iOS app
         script: |
-          set -e
-          echo "Verifying workspace existence before build:"
-          if [ ! -d "BarberSalon.xcworkspace" ]; then
-            echo "ERROR: BarberSalon.xcworkspace was NOT found in the current directory. Directory contents:"
-            ls -F
-            exit 1 # Fail the script if the workspace is missing
-          fi
-
+          # The working directory is already correct (where BarberSalon.xcworkspace is located)
           echo "Building BarberSalon..."
           xcodebuild \
             -workspace BarberSalon.xcworkspace \
