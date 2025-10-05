@@ -6,7 +6,6 @@ workflows:
 
     environment:
       xcode: latest
-      cocoapods: default
 
     scripts:
       - name: Unzip iOS source
@@ -14,28 +13,33 @@ workflows:
           echo "Unzipping project..."
           unzip -o ios_app.zip -d .
           echo "Unzipped files:"
-          ls -al
+          ls -R
 
-      - name: Install dependencies
+      - name: Locate Xcode project
         script: |
-          echo "Installing CocoaPods..."
-          # Automatically detect where BarberSalon.xcworkspace is
-          FOLDER=$(find . -type f -name "BarberSalon.xcworkspace" | head -1 | xargs dirname)
-          echo "Found project folder: $FOLDER"
-          cd "$FOLDER"
-          
-          if [ -f "Podfile" ]; then
-            pod install --repo-update
-          else
-            echo "No Podfile found — skipping pod install."
+          echo "Searching for BarberSalon.xcodeproj..."
+          FOLDER=$(find . -type d -name "BarberSalon.xcodeproj" | head -1 | xargs dirname)
+          if [ -z "$FOLDER" ]; then
+            echo "BarberSalon.xcodeproj not found after unzip!"
+            echo "Showing folder structure:"
+            ls -R
+            exit 1
           fi
+          echo "Found project folder: $FOLDER"
+          echo "FOLDER=$FOLDER" >> $CM_ENV_PATH
 
       - name: Build iOS app
         script: |
+          echo "Building BarberSalon from $FOLDER..."
           cd "$FOLDER"
-          echo "Building BarberSalon..."
+          if [ ! -d "BarberSalon.xcodeproj" ]; then
+            echo "BarberSalon.xcodeproj missing inside $FOLDER"
+            ls -al
+            exit 1
+          fi
+
           xcodebuild \
-            -workspace BarberSalon.xcworkspace \
+            -project BarberSalon.xcodeproj \
             -scheme BarberSalon \
             -sdk iphoneos \
             -configuration Release \
