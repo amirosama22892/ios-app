@@ -25,3 +25,27 @@ workflows:
           fi
           echo "✅ Found Xcode project in: $FOLDER"
           echo "FOLDER=$FOLDER" >> $CM_ENV_PATH
+
+      - name: Build iOS app
+        script: |
+          echo "🚀 Building BarberSalon from $FOLDER..."
+          cd "$FOLDER"
+          if [ ! -d "BarberSalon.xcodeproj" ]; then
+            echo "❌ BarberSalon.xcodeproj missing inside $FOLDER"
+            ls -al
+            exit 1
+          fi
+
+          # Build the project using xcodebuild
+          xcodebuild \
+            -project BarberSalon.xcodeproj \
+            -scheme BarberSalon \
+            -sdk iphoneos \
+            -configuration Release \
+            -allowProvisioningUpdates
+
+    artifacts:
+      - build/**/*.ipa
+      - build/**/*.app
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/**/*.ipa
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/**/*.app
