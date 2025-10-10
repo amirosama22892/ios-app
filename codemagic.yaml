@@ -1,57 +1,18 @@
 workflows:
-  ios_build:
-    name: Build iOS BarberSalon App
+  upload_ipa:
+    name: Upload Existing IPA to TestFlight
     instance_type: mac_mini_m2
-    max_build_duration: 60
-
+    max_build_duration: 10
     environment:
-      xcode: latest
-      cocoapods: default
-
+      vars:
+        APP_STORE_CONNECT_KEY_IDENTIFIER: "YOUR_KEY_ID"
+        APP_STORE_CONNECT_ISSUER_ID: "YOUR_ISSUER_ID"
+        APP_STORE_CONNECT_PRIVATE_KEY: Encrypted(YOUR_P8_KEY_CONTENT)
     scripts:
-      - name: Unzip iOS source
+      - name: Upload .ipa to TestFlight
         script: |
-          echo "Unzipping project..."
-          unzip -o ios_app.zip -d .
-          echo "Unzipped files:"
-          ls -R .
-          # Assuming the unzip operation places files directly in the working directory ('.')
-
-      - name: Locate project folder
-        script: |
-          echo "Locating iOS project..."
-          # Since the files are in the root directory, we just list them for verification
-          echo "Now inside folder:"
-          pwd
-          ls -al
-
-# --- Changes start here ---
-
-      - name: Install dependencies
-        script: |
-          # No need for 'cd ios_source/ios'
-          echo "Installing CocoaPods..."
-          if [ -f "Podfile" ]; then
-            pod install --repo-update
-          else
-            echo "No Podfile found — skipping pod install."
-          fi
-
-      - name: Build iOS app
-        script: |
-          # No need for 'cd /ios_source/ios' or any 'cd' if previous steps were executed in root
-          echo "Building BarberSalon..."
-          xcodebuild \
-            -workspace BarberSalon.xcworkspace \
-            -scheme BarberSalon \
-            -sdk iphoneos \
-            -configuration Release \
-            -allowProvisioningUpdates
-
-# --- Changes end here ---
-
-    artifacts:
-      - build/**/*.ipa
-      - build/**/*.app
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/**/*.ipa
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/**/*.app
+          xcrun altool --upload-app \
+            -f "MedianApp.ipa" \
+            -t ios \
+            --apiKey $APP_STORE_CONNECT_KEY_IDENTIFIER \
+            --apiIssuer $APP_STORE_CONNECT_ISSUER_ID
