@@ -5,9 +5,12 @@ workflows:
     max_build_duration: 10
     environment:
       vars:
-        APP_STORE_CONNECT_KEY_IDENTIFIER: "YOUR_KEY_ID"
-        APP_STORE_CONNECT_ISSUER_ID: "YOUR_ISSUER_ID"
-        APP_STORE_CONNECT_PRIVATE_KEY: Encrypted(YOUR_P8_KEY_CONTENT)
+        APP_STORE_CONNECT_KEY_IDENTIFIER: "2b6f56a9-4f08-4f55-97f1-567a817f2120"
+        APP_STORE_CONNECT_ISSUER_ID: "GP6YCZ76LL"
+        APP_STORE_CONNECT_PRIVATE_KEY: Encrypted(MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgDa2oAe8d/D34oaS0
+90NDanYhY7S0/SJ7gm/7bN9OF8KgCgYIKoZIzj0DAQehRANCAARP1E6GWHa3frSB
+WgwVAYoObX06zItsEM6K01yBsryXddyDNhVQwrXU4JtTBV017dhwkj7kzwye6QzQ
+nfh7KM2A)
     scripts:
       - name: Upload .ipa to TestFlight
         script: |
